@@ -25,7 +25,7 @@ for x in range(int(amount)):
 	p.sendline("%" + str(x) + "$lx")
 	value = p.readline().split()[-1].replace("!", "")
 	if x in offsets:
-		if possible[offsets.indexof(x) != value:
+		if possible[offsets.indexof(x)] != value:
 			different.append(x)
 
 print("#### Different ####")
