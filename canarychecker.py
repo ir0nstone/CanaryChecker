@@ -17,9 +17,8 @@ offsets = {}
 for x in range(repeats):
     for x in range(int(amount)):
         p = ELF("./" + executable).process()
-        p.recvuntil("name?")
+        p.clean(0.2)
         p.sendline("%" + str(x) + "$lx")
-        value = p.readline().split()[-1].replace("!", "")
         if value.endswith("00"):
             if x not in offsets:
                 offsets[x] = set()
