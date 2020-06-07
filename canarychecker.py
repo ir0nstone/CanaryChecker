@@ -22,7 +22,7 @@ for _ in range(2):
     for x in range(1, int(args.depth) + 1):
         p = process(f"./{args.file}")
         p.clean(0.2)
-        p.sendline(f"%{str(x)}$lp")
+        p.sendline(f"%{x}$lp")
 
         value = findall(r"0x[0-9A-Fa-f]*00", p.recvline().decode("latin-1"))[0]
 
